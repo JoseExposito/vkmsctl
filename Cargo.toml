@@ -1,0 +1,13 @@
+[package]
+name = "vkmsctl"
+version = "0.0.1"
+edition = "2021"
+description = "Command line tool to configure the VKMS Linux kernel driver"
+readme = "README.md"
+homepage = "https://github.com/JoseExposito/vkmsctl#readme"
+repository = "https://github.com/JoseExposito/vkmsctl"
+license = "GPL-3.0-or-later"
+authors = ["José Expósito"]
+default-run = "vkmsctl"
+
+[dependencies]
