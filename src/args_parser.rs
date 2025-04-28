@@ -5,7 +5,7 @@ use clap::{Parser, Subcommand};
 pub struct Args {
     /// Directory were ConfigFS is mounted/needs to be mounted.
     #[arg(long, default_value = "/config")]
-    pub configfs_path : String,
+    pub configfs_path: String,
 
     #[command(subcommand)]
     pub command: Option<Commands>,

@@ -1,13 +1,11 @@
 mod args_parser;
 
-fn display_current_config(_configfs_path : &str) {
-
-}
+fn display_current_config(_configfs_path: &str) {}
 
 fn main() {
     let args = args_parser::parse();
 
-    println!("Command line args: {:?}", args);
+    println!("Command line args: {args:?}");
 
     match &args.command {
         Some(args_parser::Commands::Config {}) => {
