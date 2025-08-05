@@ -12,10 +12,7 @@ pub struct Args {
 }
 
 #[derive(Subcommand, Debug)]
-pub enum Commands {
-    /// Display current configuration.
-    Config {},
-}
+pub enum Commands {}
 
 pub fn parse() -> Args {
     Args::parse()
