@@ -12,7 +12,13 @@ pub struct Args {
 }
 
 #[derive(Subcommand, Debug)]
-pub enum Commands {}
+pub enum Commands {
+    /// Create a new VKMS device
+    Create {
+        /// Path to the JSON file describing the VKMS device.
+        path: String,
+    },
+}
 
 pub fn parse() -> Args {
     Args::parse()
