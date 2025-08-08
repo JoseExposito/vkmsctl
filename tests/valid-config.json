@@ -1,0 +1,68 @@
+{
+    "name": "test",
+    "planes": [
+        {
+            "name": "primary0",
+            "type": "primary",
+            "possible_crtcs": ["crtc0"]
+        },
+        {
+            "name": "primary1",
+            "type": "primary",
+            "possible_crtcs": ["crtc1"]
+        },
+        {
+            "name": "overlay0",
+            "type": "overlay",
+            "possible_crtcs": ["crtc0"]
+        },
+        {
+            "name": "overlay1",
+            "type": "overlay",
+            "possible_crtcs": ["crtc1"]
+        },
+        {
+            "name": "cursor0",
+            "type": "cursor",
+            "possible_crtcs": ["crtc0"]
+        },
+        {
+            "name": "cursor1",
+            "type": "cursor",
+            "possible_crtcs": ["crtc1"]
+        },
+        {
+            "name": "overlay_shared",
+            "type": "overlay",
+            "possible_crtcs": ["crtc0", "crtc1"]
+        }
+    ],
+    "crtcs": [
+        {
+            "name": "crtc0"
+        },
+        {
+            "name": "crtc1"
+        }
+    ],
+    "encoders": [
+        {
+            "name": "encoder0",
+            "possible_crtcs": ["crtc0"]
+        },
+        {
+            "name": "encoder1",
+            "possible_crtcs": ["crtc1"]
+        }
+    ],
+    "connectors": [
+        {
+            "name": "connector0",
+            "possible_encoders": ["encoder0", "encoder1"]
+        },
+        {
+            "name": "connector1",
+            "possible_encoders": ["encoder0", "encoder1"]
+        }
+    ]
+}
