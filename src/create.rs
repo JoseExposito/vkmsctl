@@ -40,6 +40,8 @@ struct CrtcValidator {
     #[validate(min_length = 1)]
     #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
+
+    writeback: Option<bool>,
 }
 
 #[derive(Debug, Validate, Deserialize)]
@@ -127,7 +129,13 @@ fn create_vkms_device_builder(
     debug!("Adding CRTCs to VKMS device:");
     for crtc_config in &config.crtcs {
         debug!(" - Building CRTC with name {}", &crtc_config.name);
-        let crtc = CrtcConfig::new(&crtc_config.name);
+        let mut crtc = CrtcConfig::new(&crtc_config.name);
+
+        if let Some(writeback) = crtc_config.writeback {
+            debug!("   Setting writeback mode to {}", writeback);
+            crtc = crtc.writeback(writeback);
+        }
+
         device = device.add_crtc(crtc);
     }
 

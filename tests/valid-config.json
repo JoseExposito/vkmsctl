@@ -39,10 +39,12 @@
     ],
     "crtcs": [
         {
-            "name": "crtc0"
+            "name": "crtc0",
+            "writeback": false
         },
         {
-            "name": "crtc1"
+            "name": "crtc1",
+            "writeback": true
         }
     ],
     "encoders": [

@@ -45,6 +45,9 @@ pub struct CrtcConfig {
     /// Name of the CRTC, used as the name of the CRTC node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/crtcs/<crtc name>`.
     name: String,
+    /// Whether the CRTC is a writeback CRTC or not, stored in `crtcs/<crtc name>/writeback`.
+    /// `false` by default.
+    writeback: bool,
 }
 
 /// Encoder configuration.
@@ -145,7 +148,14 @@ impl CrtcConfig {
     pub fn new(name: &str) -> Self {
         CrtcConfig {
             name: name.to_owned(),
+            writeback: false,
         }
+    }
+
+    /// Sets the writeback mode of the CRTC.
+    pub fn writeback(mut self, writeback: bool) -> Self {
+        self.writeback = writeback;
+        self
     }
 }
 
