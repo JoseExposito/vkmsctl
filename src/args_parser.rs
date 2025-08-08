@@ -7,8 +7,8 @@ pub struct Args {
     #[arg(short, long)]
     pub verbose: bool,
 
-    /// Directory were ConfigFS is mounted/needs to be mounted.
-    #[arg(long, default_value = "/config")]
+    /// Directory were configfs is mounted.
+    #[arg(long, default_value = "/sys/kernel/config")]
     pub configfs_path: String,
 
     #[command(subcommand)]
