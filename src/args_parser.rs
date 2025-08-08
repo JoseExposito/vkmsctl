@@ -3,6 +3,10 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
+    /// If set, more verbose logging will be used.
+    #[arg(short, long)]
+    pub verbose: bool,
+
     /// Directory were ConfigFS is mounted/needs to be mounted.
     #[arg(long, default_value = "/config")]
     pub configfs_path: String,

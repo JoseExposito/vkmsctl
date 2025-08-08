@@ -1,11 +1,13 @@
 mod args_parser;
 mod create;
+mod logger;
 
 use log::debug;
 use std::io;
 
 fn main() -> Result<(), io::Error> {
     let args = args_parser::parse();
+    logger::init(args.verbose).expect("Error initializing logger, was logger::init called twice?");
 
     debug!("Command line args: {args:?}");
 
