@@ -8,6 +8,7 @@ pub enum PlaneKind {
 }
 #[derive(Debug, Default)]
 pub struct VkmsDeviceBuilder {
+    configfs_path: String,
     name: String,
     planes: Vec<PlaneConfig>,
     crtcs: Vec<CrtcConfig>,
@@ -40,8 +41,9 @@ pub struct ConnectorConfig {
 }
 
 impl VkmsDeviceBuilder {
-    pub fn new(name: &str) -> Self {
+    pub fn new(configfs_path: &str, name: &str) -> Self {
         VkmsDeviceBuilder {
+            configfs_path: configfs_path.to_owned(),
             name: name.to_owned(),
             ..VkmsDeviceBuilder::default()
         }

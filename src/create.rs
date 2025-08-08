@@ -67,7 +67,7 @@ struct ConnectorValidator {
 /// # Errors
 ///
 /// Returns an error if the JSON file is invalid or the VKMS device cannot be built.
-pub fn create_vkms_device(json_path: &String) -> Result<(), io::Error> {
+pub fn create_vkms_device(configfs_path: &str, json_path: &str) -> Result<(), io::Error> {
     debug!("Building VKMS device from JSON file: {json_path}");
     let json_str = fs::read_to_string(json_path)?;
 
@@ -77,7 +77,7 @@ pub fn create_vkms_device(json_path: &String) -> Result<(), io::Error> {
     let config = ConfigValidator::from_json_value(json)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
-    let builder = create_vkms_device_builder(&config)?;
+    let builder = create_vkms_device_builder(&configfs_path, &config)?;
     builder.build()?;
 
     Ok(())
@@ -88,9 +88,12 @@ pub fn create_vkms_device(json_path: &String) -> Result<(), io::Error> {
 /// # Errors
 ///
 /// Returns an error if the configuration is invalid.
-fn create_vkms_device_builder(config: &ConfigValidator) -> Result<VkmsDeviceBuilder, io::Error> {
+fn create_vkms_device_builder(
+    configfs_path: &str,
+    config: &ConfigValidator,
+) -> Result<VkmsDeviceBuilder, io::Error> {
     debug!("Building VKMS device with name {}", config.name);
-    let mut device = VkmsDeviceBuilder::new(&config.name);
+    let mut device = VkmsDeviceBuilder::new(&configfs_path, &config.name);
 
     debug!("Adding planes to VKMS device:");
     for plane_config in &config.planes {
