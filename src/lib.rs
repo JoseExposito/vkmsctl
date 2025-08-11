@@ -1,4 +1,6 @@
+use std::fs;
 use std::io;
+use std::os;
 
 /// VKMS device builder.
 #[derive(Debug, Default)]
@@ -21,8 +23,8 @@ pub struct VkmsDeviceBuilder {
 /// Valid plane types, as defined in the kernel.
 #[derive(Debug)]
 pub enum PlaneKind {
-    Primary,
     Overlay,
+    Primary,
     Cursor,
 }
 
@@ -113,7 +115,70 @@ impl VkmsDeviceBuilder {
     ///
     /// Returns an error if the VKMS device cannot be created.
     pub fn build(self) -> Result<(), io::Error> {
-        // TODO: Implement the actual VKMS device creation logic
+        // Create the device node at /sys/kernel/config/vkms/<device name>
+        let device_path = format!("{}/vkms/{}", self.configfs_path, self.name);
+        fs::create_dir(&device_path)?;
+
+        // Create the CRTC nodes at /sys/kernel/config/vkms/<device name>/crtcs/<crtc name>
+        for crtc in self.crtcs {
+            let crtc_path = format!("{}/crtcs/{}", &device_path, &crtc.name);
+            fs::create_dir(&crtc_path)?;
+
+            // Set the writeback mode of the CRTC
+            let is_writeback = if crtc.writeback { b"1" } else { b"0" };
+            fs::write(format!("{}/writeback", &crtc_path), &is_writeback)?;
+        }
+
+        // Create the plane nodes at /sys/kernel/config/vkms/<device name>/planes/<plane name>
+        for plane in self.planes {
+            let plane_path = format!("{}/planes/{}", &device_path, &plane.name);
+            fs::create_dir(&plane_path)?;
+
+            // Set the type of the plane
+            let kind = match plane.kind {
+                PlaneKind::Overlay => b"0",
+                PlaneKind::Primary => b"1",
+                PlaneKind::Cursor => b"2",
+            };
+            fs::write(format!("{}/type", &plane_path), &kind)?;
+
+            // Link with the possible CRTCs for the plane
+            for crtc in plane.possible_crtcs {
+                let original_crtc = format!("{}/crtcs/{}", &device_path, &crtc);
+                let linked_crtc = format!("{}/possible_crtcs/{}", &plane_path, &crtc);
+                os::unix::fs::symlink(&original_crtc, &linked_crtc)?;
+            }
+        }
+
+        // Create the encoder nodes at /sys/kernel/config/vkms/<device name>/encoders/<encoder name>
+        for encoder in self.encoders {
+            let encoder_path = format!("{}/encoders/{}", &device_path, &encoder.name);
+            fs::create_dir(&encoder_path)?;
+
+            // Link with the possible CRTCs for the encoder
+            for crtc in encoder.possible_crtcs {
+                let original_crtc = format!("{}/crtcs/{}", &device_path, &crtc);
+                let linked_crtc = format!("{}/possible_crtcs/{}", &encoder_path, &crtc);
+                os::unix::fs::symlink(&original_crtc, &linked_crtc)?;
+            }
+        }
+
+        // Create the connector nodes at /sys/kernel/config/vkms/<device name>/connectors/<connector name>
+        for connector in self.connectors {
+            let connector_path = format!("{}/connectors/{}", &device_path, &connector.name);
+            fs::create_dir(&connector_path)?;
+
+            // Link with the possible encoders for the connector
+            for encoder in connector.possible_encoders {
+                let original_encoder = format!("{}/encoders/{}", &device_path, &encoder);
+                let linked_encoder = format!("{}/possible_encoders/{}", &connector_path, &encoder);
+                os::unix::fs::symlink(&original_encoder, &linked_encoder)?;
+            }
+        }
+
+        // Enable the VKMS device
+        fs::write(format!("{}/enabled", &device_path), b"1")?;
+
         Ok(())
     }
 }
