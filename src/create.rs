@@ -132,8 +132,8 @@ fn create_vkms_device_builder(
         let mut crtc = CrtcConfig::new(&crtc_config.name);
 
         if let Some(writeback) = crtc_config.writeback {
-            debug!("   Setting writeback mode to {}", writeback);
-            crtc = crtc.writeback(writeback);
+            debug!("   Setting CRTC writeback enabled to {}", writeback);
+            crtc = crtc.writeback_enabled(writeback);
         }
 
         device = device.add_crtc(crtc);

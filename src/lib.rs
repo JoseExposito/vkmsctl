@@ -47,9 +47,9 @@ pub struct CrtcConfig {
     /// Name of the CRTC, used as the name of the CRTC node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/crtcs/<crtc name>`.
     name: String,
-    /// Whether the CRTC is a writeback CRTC or not, stored in `crtcs/<crtc name>/writeback`.
+    /// Whether a VKMS CRTC writeback connector is enabled or not, stored in `crtcs/<crtc name>/writeback`.
     /// `false` by default.
-    writeback: bool,
+    is_writeback_enabled: bool,
 }
 
 /// Encoder configuration.
@@ -125,7 +125,11 @@ impl VkmsDeviceBuilder {
             fs::create_dir(&crtc_path)?;
 
             // Set the writeback mode of the CRTC
-            let is_writeback = if crtc.writeback { b"1" } else { b"0" };
+            let is_writeback = if crtc.is_writeback_enabled {
+                b"1"
+            } else {
+                b"0"
+            };
             fs::write(format!("{}/writeback", &crtc_path), &is_writeback)?;
         }
 
@@ -213,13 +217,13 @@ impl CrtcConfig {
     pub fn new(name: &str) -> Self {
         CrtcConfig {
             name: name.to_owned(),
-            writeback: false,
+            is_writeback_enabled: false,
         }
     }
 
-    /// Sets the writeback mode of the CRTC.
-    pub fn writeback(mut self, writeback: bool) -> Self {
-        self.writeback = writeback;
+    /// Sets the VKMS CRTC writeback connector status.
+    pub fn writeback_enabled(mut self, writeback: bool) -> Self {
+        self.is_writeback_enabled = writeback;
         self
     }
 }
