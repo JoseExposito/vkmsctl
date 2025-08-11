@@ -3,7 +3,7 @@
 vkmsctl is written in Rust and it can be built using cargo:
 
 ```bash
-$ cargo build
+$ cargo build --features="vkmsctl-deps"
 ```
 
 To run the vkmsctl command line tool:
