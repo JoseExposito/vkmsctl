@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/vkmsctl",
             "args": ["--verbose", "create", "${workspaceFolder}/tests/valid-config.json"],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build"
         }
     ]
 }
