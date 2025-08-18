@@ -5,7 +5,8 @@ use serde_valid::Validate;
 use std::fs;
 use std::io;
 use vkmsctl::{
-    ConnectorConfig, CrtcConfig, EncoderConfig, PlaneConfig, PlaneKind, VkmsDeviceBuilder,
+    ConnectorConfig, ConnectorStatus, CrtcConfig, EncoderConfig, PlaneConfig, PlaneKind,
+    VkmsDeviceBuilder,
 };
 
 #[derive(Debug, Deserialize, Validate)]
@@ -60,6 +61,8 @@ struct ConnectorValidator {
     #[validate(min_length = 1)]
     #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
+    #[validate(enumerate = ["connected", "disconnected", "unknown"])]
+    status: Option<String>,
     #[validate(min_items = 1)]
     #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     possible_encoders: Option<Vec<String>>,
@@ -159,6 +162,21 @@ fn create_vkms_device_builder(
     for connector_config in &config.connectors {
         debug!(" - Building connector with name {}", &connector_config.name);
         let mut connector = ConnectorConfig::new(&connector_config.name);
+
+        if let Some(status) = &connector_config.status {
+            debug!("   Setting connector status to {status}");
+            connector = match status.as_str() {
+                "connected" => connector.status(ConnectorStatus::Connected),
+                "disconnected" => connector.status(ConnectorStatus::Disconnected),
+                "unknown" => connector.status(ConnectorStatus::Unknown),
+                _ => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!("Invalid connector status: {status}"),
+                    ))
+                }
+            };
+        }
 
         if let Some(possible_encoders) = &connector_config.possible_encoders {
             debug!("   Setting possible encoders to {possible_encoders:?}");

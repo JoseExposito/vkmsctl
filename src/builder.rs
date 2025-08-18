@@ -43,6 +43,14 @@ pub enum PlaneKind {
     Cursor,
 }
 
+/// Connector status.
+#[derive(Debug)]
+pub enum ConnectorStatus {
+    Connected,
+    Disconnected,
+    Unknown,
+}
+
 /// Plane configuration.
 #[derive(Debug)]
 pub struct PlaneConfig {
@@ -68,7 +76,7 @@ pub struct CrtcConfig {
 }
 
 /// Encoder configuration.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct EncoderConfig {
     /// Name of the encoder, used as the name of the encoder node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/encoders/<encoder name>`.
@@ -79,11 +87,13 @@ pub struct EncoderConfig {
 }
 
 /// Connector configuration.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ConnectorConfig {
     /// Name of the connector, used as the name of the connector node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/connectors/<connector name>`.
     name: String,
+    /// Status of the connector, stored in `connectors/<connector name>/status`.
+    status: ConnectorStatus,
     /// Possible encoders for the connector, stored in
     /// `connectors/<connector name>/possible_encoders` as symbolic links to the encoder nodes.
     possible_encoders: Vec<String>,
@@ -273,8 +283,15 @@ impl ConnectorConfig {
     pub fn new(name: &str) -> Self {
         ConnectorConfig {
             name: name.to_owned(),
+            status: ConnectorStatus::Connected,
             possible_encoders: Vec::new(),
         }
+    }
+
+    /// Sets the status of the connector.
+    pub fn status(mut self, status: ConnectorStatus) -> Self {
+        self.status = status;
+        self
     }
 
     /// Sets the possible encoders for the connector.
