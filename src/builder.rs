@@ -23,6 +23,8 @@ pub struct VkmsDeviceBuilder {
     /// Name of the VKMS device, used as the name of the device node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>`.
     name: String,
+    /// Whether the VKMS device is enabled or not, stored in `vkms/<device name>/enabled`.
+    enabled: bool,
     /// Planes of the VKMS device.
     planes: Vec<PlaneConfig>,
     /// CRTCs of the VKMS device.
@@ -96,6 +98,12 @@ impl VkmsDeviceBuilder {
             name: name.to_owned(),
             ..VkmsDeviceBuilder::default()
         }
+    }
+
+    /// Sets the enabled status of the VKMS device.
+    pub fn enabled(mut self, enabled: bool) -> Self {
+        self.enabled = enabled;
+        self
     }
 
     /// Adds a plane to the VKMS device.
@@ -194,7 +202,8 @@ impl VkmsDeviceBuilder {
         }
 
         // Enable the VKMS device
-        fs::write(format!("{}/enabled", &device_path), b"1")?;
+        let enabled = if self.enabled { b"1" } else { b"0" };
+        fs::write(format!("{}/enabled", &device_path), enabled)?;
 
         Ok(())
     }

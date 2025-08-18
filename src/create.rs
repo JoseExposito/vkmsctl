@@ -13,6 +13,7 @@ struct ConfigValidator {
     #[validate(min_length = 1)]
     #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
+    enabled: bool,
     #[validate]
     planes: Vec<PlaneValidator>,
     #[validate]
@@ -96,6 +97,8 @@ fn create_vkms_device_builder(
 ) -> Result<VkmsDeviceBuilder, io::Error> {
     debug!("Building VKMS device with name {}", config.name);
     let mut device = VkmsDeviceBuilder::new(&configfs_path, &config.name);
+    debug!(" - Setting enabled status to {}", config.enabled);
+    device = device.enabled(config.enabled);
 
     debug!("Adding planes to VKMS device:");
     for plane_config in &config.planes {
