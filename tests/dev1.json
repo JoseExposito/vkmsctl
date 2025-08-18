@@ -1,5 +1,5 @@
 {
-    "name": "test",
+    "name": "dev1",
     "enabled": true,
     "planes": [
         {
@@ -40,8 +40,7 @@
     ],
     "crtcs": [
         {
-            "name": "crtc0",
-            "writeback": false
+            "name": "crtc0"
         },
         {
             "name": "crtc1",
@@ -61,11 +60,22 @@
     "connectors": [
         {
             "name": "connector0",
-            "possible_encoders": ["encoder0", "encoder1"]
+            "status": "connected",
+            "possible_encoders": ["encoder0"]
         },
         {
             "name": "connector1",
+            "status": "disconnected",
+            "possible_encoders": ["encoder1"]
+        },
+        {
+            "name": "connector2",
+            "status": "unknown",
             "possible_encoders": ["encoder0", "encoder1"]
+        },
+        {
+            "name": "connector3",
+            "possible_encoders": ["encoder1"]
         }
     ]
 }
