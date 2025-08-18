@@ -1,3 +1,16 @@
+//! VKMS device builder.
+//!
+//! The `VkmsDeviceBuilder` struct is used to build a VKMS device.
+//!
+//! A `VkmsDeviceBuilder` is composed of:
+//!
+//! - Planes
+//! - CRTCs
+//! - Encoders
+//! - Connectors
+//!
+//! Each of these components is represented by a struct, and each struct contains its configuration.
+
 use std::fs;
 use std::io;
 use std::os;
