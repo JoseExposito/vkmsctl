@@ -70,9 +70,7 @@ fn list_vkms_devices(configfs_path: &str) -> Result<(), io::Error> {
         devices.push(device);
     }
 
-    for device in devices {
-        println!("{device:?}");
-    }
+    println!("{}", serde_json::to_string_pretty(&devices).unwrap());
 
     Ok(())
 }
