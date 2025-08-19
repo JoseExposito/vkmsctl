@@ -110,6 +110,11 @@ impl VkmsDeviceBuilder {
         }
     }
 
+    /// Returns the path to the VKMS device.
+    pub fn path(&self) -> String {
+        format!("{}/vkms/{}", self.configfs_path, self.name)
+    }
+
     /// Sets the enabled status of the VKMS device.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
@@ -147,12 +152,11 @@ impl VkmsDeviceBuilder {
     /// Returns an error if the VKMS device cannot be created.
     pub fn build(self) -> Result<(), io::Error> {
         // Create the device node at /sys/kernel/config/vkms/<device name>
-        let device_path = format!("{}/vkms/{}", self.configfs_path, self.name);
-        fs::create_dir(&device_path)?;
+        fs::create_dir(self.path())?;
 
         // Create the CRTC nodes at /sys/kernel/config/vkms/<device name>/crtcs/<crtc name>
-        for crtc in self.crtcs {
-            let crtc_path = format!("{}/crtcs/{}", &device_path, &crtc.name);
+        for crtc in &self.crtcs {
+            let crtc_path = format!("{}/crtcs/{}", &self.path(), &crtc.name);
             fs::create_dir(&crtc_path)?;
 
             // Set the writeback mode of the CRTC
@@ -161,12 +165,12 @@ impl VkmsDeviceBuilder {
             } else {
                 b"0"
             };
-            fs::write(format!("{}/writeback", &crtc_path), &is_writeback)?;
+            fs::write(format!("{}/writeback", &crtc_path), is_writeback)?;
         }
 
         // Create the plane nodes at /sys/kernel/config/vkms/<device name>/planes/<plane name>
-        for plane in self.planes {
-            let plane_path = format!("{}/planes/{}", &device_path, &plane.name);
+        for plane in &self.planes {
+            let plane_path = format!("{}/planes/{}", &self.path(), &plane.name);
             fs::create_dir(&plane_path)?;
 
             // Set the type of the plane
@@ -175,37 +179,45 @@ impl VkmsDeviceBuilder {
                 PlaneKind::Primary => b"1",
                 PlaneKind::Cursor => b"2",
             };
-            fs::write(format!("{}/type", &plane_path), &kind)?;
+            fs::write(format!("{}/type", &plane_path), kind)?;
 
             // Link with the possible CRTCs for the plane
-            for crtc in plane.possible_crtcs {
-                let original_crtc = format!("{}/crtcs/{}", &device_path, &crtc);
+            for crtc in &plane.possible_crtcs {
+                let original_crtc = format!("{}/crtcs/{}", &self.path(), &crtc);
                 let linked_crtc = format!("{}/possible_crtcs/{}", &plane_path, &crtc);
                 os::unix::fs::symlink(&original_crtc, &linked_crtc)?;
             }
         }
 
         // Create the encoder nodes at /sys/kernel/config/vkms/<device name>/encoders/<encoder name>
-        for encoder in self.encoders {
-            let encoder_path = format!("{}/encoders/{}", &device_path, &encoder.name);
+        for encoder in &self.encoders {
+            let encoder_path = format!("{}/encoders/{}", &self.path(), &encoder.name);
             fs::create_dir(&encoder_path)?;
 
             // Link with the possible CRTCs for the encoder
-            for crtc in encoder.possible_crtcs {
-                let original_crtc = format!("{}/crtcs/{}", &device_path, &crtc);
+            for crtc in &encoder.possible_crtcs {
+                let original_crtc = format!("{}/crtcs/{}", &self.path(), &crtc);
                 let linked_crtc = format!("{}/possible_crtcs/{}", &encoder_path, &crtc);
                 os::unix::fs::symlink(&original_crtc, &linked_crtc)?;
             }
         }
 
         // Create the connector nodes at /sys/kernel/config/vkms/<device name>/connectors/<connector name>
-        for connector in self.connectors {
-            let connector_path = format!("{}/connectors/{}", &device_path, &connector.name);
+        for connector in &self.connectors {
+            let connector_path = format!("{}/connectors/{}", &self.path(), &connector.name);
             fs::create_dir(&connector_path)?;
 
+            // Set the status of the connector
+            let status = match connector.status {
+                ConnectorStatus::Connected => b"1",
+                ConnectorStatus::Disconnected => b"2",
+                ConnectorStatus::Unknown => b"3",
+            };
+            fs::write(format!("{}/status", &connector_path), status)?;
+
             // Link with the possible encoders for the connector
-            for encoder in connector.possible_encoders {
-                let original_encoder = format!("{}/encoders/{}", &device_path, &encoder);
+            for encoder in &connector.possible_encoders {
+                let original_encoder = format!("{}/encoders/{}", &self.path(), &encoder);
                 let linked_encoder = format!("{}/possible_encoders/{}", &connector_path, &encoder);
                 os::unix::fs::symlink(&original_encoder, &linked_encoder)?;
             }
@@ -213,7 +225,7 @@ impl VkmsDeviceBuilder {
 
         // Enable the VKMS device
         let enabled = if self.enabled { b"1" } else { b"0" };
-        fs::write(format!("{}/enabled", &device_path), enabled)?;
+        fs::write(format!("{}/enabled", &self.path()), enabled)?;
 
         Ok(())
     }
