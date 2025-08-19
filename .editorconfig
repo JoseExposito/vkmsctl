@@ -15,6 +15,9 @@ insert_final_newline = true
 [*.rs]
 max_line_length = 100
 
+[*.json]
+indent_size = 2
+
 [*.md]
 # double whitespace at end of line
 # denotes a line break in Markdown
