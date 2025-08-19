@@ -1,6 +1,7 @@
 //! VKMS device builder.
 //!
-//! The `VkmsDeviceBuilder` struct is used to build a VKMS device.
+//! The `VkmsDeviceBuilder` struct is used to represent a VKMS device as it is in the filesystem
+//! and, optionally, to create or remove it.
 //!
 //! A `VkmsDeviceBuilder` is composed of:
 //!
@@ -160,6 +161,58 @@ impl VkmsDeviceBuilder {
         }
 
         Ok(device)
+    }
+
+    /// Disables and removes the VKMS device from the filesystem.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if there is a problem disabling or removing the device from the filesystem.
+    pub fn remove(self) -> Result<(), io::Error> {
+        // Disable the VKMS device
+        fs::write(format!("{}/enabled", &self.path()), b"0")?;
+
+        // Unlink the possible CRTCs and encoders from the planes, encoders and connectors
+        Self::unlink_pipeline_items(&format!("{}/planes", &self.path()), "possible_crtcs")?;
+        Self::unlink_pipeline_items(&format!("{}/encoders", &self.path()), "possible_crtcs")?;
+        Self::unlink_pipeline_items(&format!("{}/connectors", &self.path()), "possible_encoders")?;
+
+        // Remove the planes, CRTCs, encoders and connectors
+        Self::remove_pipeline_items(&format!("{}/planes", &self.path()))?;
+        Self::remove_pipeline_items(&format!("{}/crtcs", &self.path()))?;
+        Self::remove_pipeline_items(&format!("{}/encoders", &self.path()))?;
+        Self::remove_pipeline_items(&format!("{}/connectors", &self.path()))?;
+
+        // At this point, everything else is removed by the kernel and it's safe to remove the
+        // device node at /sys/kernel/config/vkms/<device name>
+        fs::remove_dir(&self.path())?;
+
+        Ok(())
+    }
+
+    /// Unlinks all the items in the given link directory.
+    fn unlink_pipeline_items(base_path: &str, link_dir_name: &str) -> Result<(), io::Error> {
+        for item_dir in fs::read_dir(base_path)? {
+            let item_path = item_dir?.path().to_string_lossy().into_owned();
+            let links_path = format!("{item_path}/{link_dir_name}");
+
+            for link in fs::read_dir(links_path)? {
+                let link_path = link?.path().to_string_lossy().into_owned();
+                fs::remove_file(link_path)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Removes all the items in the given item directory.
+    fn remove_pipeline_items(base_path: &str) -> Result<(), io::Error> {
+        for item_dir in fs::read_dir(base_path)? {
+            let item_path = item_dir?.path().to_string_lossy().into_owned();
+            fs::remove_dir(item_path)?;
+        }
+
+        Ok(())
     }
 
     /// Returns the path to the VKMS device.

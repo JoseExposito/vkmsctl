@@ -36,6 +36,12 @@ pub enum Commands {
     /// device as it is in the filesystem.
     /// It doesn't include any state that is not stored in the filesystem.
     List {},
+
+    /// Remove a VKMS device.
+    Remove {
+        /// Name of the VKMS device to remove.
+        name: String,
+    },
 }
 
 /// List all VKMS devices in the given configfs path.
@@ -60,6 +66,16 @@ fn list_vkms_devices(configfs_path: &str) -> Result<(), io::Error> {
     Ok(())
 }
 
+/// Remove a VKMS device in the given configfs path.
+///
+/// # Errors
+///
+/// Returns an error if there is a problem deleting the device from the filesystem.
+fn remove_vkms_device(configfs_path: &str, name: &str) -> Result<(), io::Error> {
+    let device = VkmsDeviceBuilder::from_fs(configfs_path, name)?;
+    device.remove()
+}
+
 fn main() -> Result<(), io::Error> {
     let args = Args::parse();
     logger::init(args.verbose).expect("Error initializing logger, was logger::init called twice?");
@@ -71,6 +87,7 @@ fn main() -> Result<(), io::Error> {
     match args.command {
         Some(Commands::Create { path }) => create::create_vkms_device(&configfs_path, &path),
         Some(Commands::List {}) => list_vkms_devices(&configfs_path),
+        Some(Commands::Remove { name }) => remove_vkms_device(&configfs_path, &name),
         None => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             "Unknown command provided",
