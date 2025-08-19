@@ -17,11 +17,18 @@ pub struct Args {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Create a new VKMS device
+    /// Create a new VKMS device.
     Create {
         /// Path to the JSON file describing the VKMS device.
         path: String,
     },
+
+    /// List all VKMS devices.
+    ///
+    /// Note that the output of this command is only a representation of the state of the VKMS
+    /// device as it is in the filesystem.
+    /// It doesn't include any state that is not stored in the filesystem.
+    List {},
 }
 
 pub fn parse() -> Args {

@@ -106,8 +106,60 @@ impl VkmsDeviceBuilder {
         VkmsDeviceBuilder {
             configfs_path: configfs_path.to_owned(),
             name: name.to_owned(),
-            ..VkmsDeviceBuilder::default()
+            enabled: false,
+            planes: Vec::new(),
+            crtcs: Vec::new(),
+            encoders: Vec::new(),
+            connectors: Vec::new(),
         }
+    }
+
+    /// Given a configfs path and a device name, builds a `VkmsDeviceBuilder` from the current
+    /// filesystem state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the VKMS device cannot be created.
+    pub fn from_fs(configfs_path: &str, name: &str) -> Result<Self, io::Error> {
+        let mut device = Self::new(configfs_path, name);
+
+        // Set the device enabled status
+        let enabled = fs::read_to_string(format!("{}/enabled", &device.path()))?;
+        device = device.enabled(enabled.trim() == "1");
+
+        // Create the device planes
+        let planes_path = format!("{}/planes", &device.path());
+        for plane_dir in fs::read_dir(&planes_path)? {
+            let name = plane_dir?.file_name().to_string_lossy().into_owned();
+            let plane = PlaneConfig::from_fs(&planes_path, &name)?;
+            device = device.add_plane(plane);
+        }
+
+        // Create the device CRTCs
+        let crtcs_path = format!("{}/crtcs", &device.path());
+        for crtc_dir in fs::read_dir(&crtcs_path)? {
+            let name = crtc_dir?.file_name().to_string_lossy().into_owned();
+            let crtc = CrtcConfig::from_fs(&crtcs_path, &name)?;
+            device = device.add_crtc(crtc);
+        }
+
+        // Create the device encoders
+        let encoders_path = format!("{}/encoders", &device.path());
+        for encoder_dir in fs::read_dir(&encoders_path)? {
+            let name = encoder_dir?.file_name().to_string_lossy().into_owned();
+            let encoder = EncoderConfig::from_fs(&encoders_path, &name)?;
+            device = device.add_encoder(encoder);
+        }
+
+        // Create the device connectors
+        let connectors_path = format!("{}/connectors", &device.path());
+        for connector_dir in fs::read_dir(&connectors_path)? {
+            let name = connector_dir?.file_name().to_string_lossy().into_owned();
+            let connector = ConnectorConfig::from_fs(&connectors_path, &name)?;
+            device = device.add_connector(connector);
+        }
+
+        Ok(device)
     }
 
     /// Returns the path to the VKMS device.
@@ -242,6 +294,44 @@ impl PlaneConfig {
         }
     }
 
+    /// Given a path to the planes directory (e.g. `/sys/kernel/config/vkms/<device name>/planes`)
+    /// and a plane name, builds a `PlaneConfig` from the current filesystem state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the plane cannot be created.
+    pub fn from_fs(planes_path: &str, name: &str) -> Result<Self, io::Error> {
+        let mut plane = Self::new(name);
+        let plane_path = format!("{planes_path}/{name}");
+
+        // Set the type of the plane
+        let kind_str = fs::read_to_string(format!("{}/type", &plane_path))?;
+        let kind = match kind_str.trim() {
+            "0" => PlaneKind::Overlay,
+            "1" => PlaneKind::Primary,
+            "2" => PlaneKind::Cursor,
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Invalid plane type",
+                ))
+            }
+        };
+        plane = plane.kind(kind);
+
+        // Set the possible CRTCs for the plane
+        let possible_crtcs_path = format!("{}/possible_crtcs", &plane_path);
+        let mut possible_crtcs = Vec::new();
+        for possible_crtc_link in fs::read_dir(possible_crtcs_path)? {
+            let target = fs::read_link(possible_crtc_link?.path())?;
+            let target_name = target.file_name().unwrap().to_string_lossy().into_owned();
+            possible_crtcs.push(target_name);
+        }
+        plane = plane.possible_crtcs(&possible_crtcs);
+
+        Ok(plane)
+    }
+
     /// Sets the type of the plane.
     pub fn kind(mut self, kind: PlaneKind) -> Self {
         self.kind = kind;
@@ -265,6 +355,23 @@ impl CrtcConfig {
         }
     }
 
+    /// Given a path to the CRTCs directory (e.g. `/sys/kernel/config/vkms/<device name>/crtcs`)
+    /// and a CRTC name, builds a `CrtcConfig` from the current filesystem state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the CRTC cannot be created.
+    pub fn from_fs(crtcs_path: &str, name: &str) -> Result<Self, io::Error> {
+        let mut crtc = Self::new(name);
+        let crtc_path = format!("{crtcs_path}/{name}");
+
+        // Set if the writeback is enabled or not
+        let is_writeback_enabled = fs::read_to_string(format!("{}/writeback", &crtc_path))?;
+        crtc = crtc.writeback_enabled(is_writeback_enabled.trim() == "1");
+
+        Ok(crtc)
+    }
+
     /// Sets the VKMS CRTC writeback connector status.
     pub fn writeback_enabled(mut self, writeback: bool) -> Self {
         self.is_writeback_enabled = writeback;
@@ -280,6 +387,29 @@ impl EncoderConfig {
             name: name.to_owned(),
             possible_crtcs: Vec::new(),
         }
+    }
+
+    /// Given a path to the encoders directory (e.g. `/sys/kernel/config/vkms/<device name>/encoders`)
+    /// and an encoder name, builds a `EncoderConfig` from the current filesystem state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the encoder cannot be created.
+    pub fn from_fs(encoders_path: &str, name: &str) -> Result<Self, io::Error> {
+        let mut encoder = Self::new(name);
+        let encoder_path = format!("{encoders_path}/{name}");
+
+        // Set the possible CRTCs for the encoder
+        let possible_crtcs_path = format!("{}/possible_crtcs", &encoder_path);
+        let mut possible_crtcs = Vec::new();
+        for possible_crtc_link in fs::read_dir(possible_crtcs_path)? {
+            let target = fs::read_link(possible_crtc_link?.path())?;
+            let target_name = target.file_name().unwrap().to_string_lossy().into_owned();
+            possible_crtcs.push(target_name);
+        }
+        encoder = encoder.possible_crtcs(&possible_crtcs);
+
+        Ok(encoder)
     }
 
     /// Sets the possible CRTCs for the encoder.
@@ -298,6 +428,44 @@ impl ConnectorConfig {
             status: ConnectorStatus::Connected,
             possible_encoders: Vec::new(),
         }
+    }
+
+    /// Given a path to the connectors directory (e.g. `/sys/kernel/config/vkms/<device name>/connectors`)
+    /// and a connector name, builds a `ConnectorConfig` from the current filesystem state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the connector cannot be created.
+    pub fn from_fs(connectors_path: &str, name: &str) -> Result<Self, io::Error> {
+        let mut connector = Self::new(name);
+        let connector_path = format!("{connectors_path}/{name}");
+
+        // Set the status of the connector
+        let status = fs::read_to_string(format!("{}/status", &connector_path))?;
+        let status = match status.trim() {
+            "1" => ConnectorStatus::Connected,
+            "2" => ConnectorStatus::Disconnected,
+            "3" => ConnectorStatus::Unknown,
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Invalid connector status",
+                ))
+            }
+        };
+        connector = connector.status(status);
+
+        // Set the possible encoders for the connector
+        let possible_encoders_path = format!("{}/possible_encoders", &connector_path);
+        let mut possible_encoders = Vec::new();
+        for possible_encoder_link in fs::read_dir(possible_encoders_path)? {
+            let target = fs::read_link(possible_encoder_link?.path())?;
+            let target_name = target.file_name().unwrap().to_string_lossy().into_owned();
+            possible_encoders.push(target_name);
+        }
+        connector = connector.possible_encoders(&possible_encoders);
+
+        Ok(connector)
     }
 
     /// Sets the status of the connector.

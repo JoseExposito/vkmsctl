@@ -12,6 +12,15 @@
             "args": ["--verbose", "create", "${workspaceFolder}/tests/valid-config.json"],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build"
+        },
+        {
+            "name": "Debug list-devices",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/vkmsctl",
+            "args": ["--verbose", "--configfs-path", "${workspaceFolder}/tests/mocks", "list"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build"
         }
     ]
 }
