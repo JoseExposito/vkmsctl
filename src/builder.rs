@@ -16,28 +16,40 @@ use std::fs;
 use std::io;
 use std::os;
 
+use serde::{Deserialize, Serialize};
+use serde_valid::json::FromJsonValue;
+use serde_valid::Validate;
+
 /// VKMS device builder.
-#[derive(Debug, Default)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct VkmsDeviceBuilder {
     /// Path to the configfs directory, usually `/sys/kernel/config`.
+    #[serde(skip)]
     configfs_path: String,
     /// Name of the VKMS device, used as the name of the device node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>`.
+    #[validate(min_length = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
     /// Whether the VKMS device is enabled or not, stored in `vkms/<device name>/enabled`.
     enabled: bool,
     /// Planes of the VKMS device.
+    #[validate]
     planes: Vec<PlaneConfig>,
     /// CRTCs of the VKMS device.
+    #[validate]
     crtcs: Vec<CrtcConfig>,
     /// Encoders of the VKMS device.
+    #[validate]
     encoders: Vec<EncoderConfig>,
     /// Connectors of the VKMS device.
+    #[validate]
     connectors: Vec<ConnectorConfig>,
 }
 
 /// Valid plane types, as defined in the kernel.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
+#[serde(rename_all = "snake_case")]
 pub enum PlaneKind {
     Overlay,
     Primary,
@@ -45,7 +57,8 @@ pub enum PlaneKind {
 }
 
 /// Connector status.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
+#[serde(rename_all = "snake_case")]
 pub enum ConnectorStatus {
     Connected,
     Disconnected,
@@ -53,23 +66,30 @@ pub enum ConnectorStatus {
 }
 
 /// Plane configuration.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct PlaneConfig {
     /// Name of the plane, used as the name of the plane node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/planes/<plane name>`.
+    #[validate(min_length = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
     /// Type of the plane, stored in `planes/<plane name>/type`.
+    #[serde(rename = "type")]
     kind: PlaneKind,
     /// Possible CRTCs for the plane, stored in `planes/<plane name>/possible_crtcs` as symbolic
     /// links to the CRTC nodes.
+    #[validate(min_length = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     possible_crtcs: Vec<String>,
 }
 
 /// CRTC configuration.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct CrtcConfig {
     /// Name of the CRTC, used as the name of the CRTC node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/crtcs/<crtc name>`.
+    #[validate(min_length = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
     /// Whether a VKMS CRTC writeback connector is enabled or not, stored in
     /// `crtcs/<crtc name>/writeback`. `false` by default.
@@ -77,26 +97,34 @@ pub struct CrtcConfig {
 }
 
 /// Encoder configuration.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct EncoderConfig {
     /// Name of the encoder, used as the name of the encoder node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/encoders/<encoder name>`.
+    #[validate(min_length = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
     /// Possible CRTCs for the encoder, stored in `encoders/<encoder name>/possible_crtcs` as
     /// symbolic links to the CRTC nodes.
+    #[validate(min_length = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     possible_crtcs: Vec<String>,
 }
 
 /// Connector configuration.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct ConnectorConfig {
     /// Name of the connector, used as the name of the connector node in configfs, for example:
     /// `/sys/kernel/config/vkms/<device name>/connectors/<connector name>`.
+    #[validate(min_length = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     name: String,
     /// Status of the connector, stored in `connectors/<connector name>/status`.
     status: ConnectorStatus,
     /// Possible encoders for the connector, stored in
     /// `connectors/<connector name>/possible_encoders` as symbolic links to the encoder nodes.
+    #[validate(min_items = 1)]
+    #[validate(pattern = r"^[a-zA-Z0-9._\- ]+$")]
     possible_encoders: Vec<String>,
 }
 
@@ -113,6 +141,21 @@ impl VkmsDeviceBuilder {
             encoders: Vec::new(),
             connectors: Vec::new(),
         }
+    }
+
+    pub fn from_json(configfs_path: &str, json_path: &str) -> Result<Self, io::Error> {
+        let json_str = fs::read_to_string(json_path)?;
+
+        let json: serde_json::Value = serde_json::from_str(&json_str)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+        let mut builder = Self::from_json_value(json)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+        // Add `#[serde(skip)]` fields
+        builder.configfs_path = configfs_path.to_owned();
+
+        Ok(builder)
     }
 
     /// Given a configfs path and a device name, builds a `VkmsDeviceBuilder` from the current

@@ -40,11 +40,12 @@
     ],
     "crtcs": [
         {
-            "name": "crtc0"
+            "name": "crtc0",
+            "is_writeback_enabled": false
         },
         {
             "name": "crtc1",
-            "writeback": true
+            "is_writeback_enabled": true
         }
     ],
     "encoders": [
@@ -75,6 +76,7 @@
         },
         {
             "name": "connector3",
+            "status": "connected",
             "possible_encoders": ["encoder1"]
         }
     ]

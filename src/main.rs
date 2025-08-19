@@ -1,4 +1,3 @@
-mod create;
 mod logger;
 
 use clap::{Parser, Subcommand};
@@ -44,6 +43,18 @@ pub enum Commands {
     },
 }
 
+/// Creates a VKMS device from the given JSON file.
+///
+/// # Errors
+///
+/// Returns an error if the JSON file is invalid or the VKMS device cannot be built.
+pub fn create_vkms_device(configfs_path: &str, json_path: &str) -> Result<(), io::Error> {
+    let builder = VkmsDeviceBuilder::from_json(configfs_path, json_path)?;
+    builder.build()?;
+
+    Ok(())
+}
+
 /// List all VKMS devices in the given configfs path.
 ///
 /// # Errors
@@ -85,7 +96,7 @@ fn main() -> Result<(), io::Error> {
     let configfs_path = args.configfs_path;
 
     match args.command {
-        Some(Commands::Create { path }) => create::create_vkms_device(&configfs_path, &path),
+        Some(Commands::Create { path }) => create_vkms_device(&configfs_path, &path),
         Some(Commands::List {}) => list_vkms_devices(&configfs_path),
         Some(Commands::Remove { name }) => remove_vkms_device(&configfs_path, &name),
         None => Err(io::Error::new(
