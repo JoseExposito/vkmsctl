@@ -3,13 +3,13 @@
 vkmsctl is written in Rust and it can be built using cargo:
 
 ```bash
-$ cargo build --features="vkmsctl-deps"
+$ cargo build --features="vkmsctl-cli"
 ```
 
 To run the vkmsctl command line tool:
 
 ```bash
-$ cargo run --features="vkmsctl-deps" -- <CLI arguments>
+$ cargo run --features="vkmsctl-cli" -- <CLI arguments>
 ```
 
 
@@ -26,7 +26,7 @@ The vkmsctl binary provides a CLI interface for interacting with the
 configfs configuration system. For more information about the available options:
 
 ```bash
-$ cargo run --features="vkmsctl-deps" -- --help
+$ cargo run --features="vkmsctl-cli" -- --help
 ```
 
 ## vkmsctl Library (`src/lib.rs`)

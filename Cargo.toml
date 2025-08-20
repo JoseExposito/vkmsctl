@@ -18,7 +18,7 @@ serde_json = "1.0.142"
 serde_valid = "1.0.5"
 
 [features]
-vkmsctl-deps = ["clap", "log"]
+vkmsctl-cli = ["clap", "log"]
 
 [lib]
 name = "vkmsctl"
@@ -27,4 +27,4 @@ path = "src/lib.rs"
 [[bin]]
 name = "vkmsctl"
 path = "src/main.rs"
-required-features = ["vkmsctl-deps"]
+required-features = ["vkmsctl-cli"]
