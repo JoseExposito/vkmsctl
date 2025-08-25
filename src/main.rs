@@ -1,7 +1,4 @@
-mod logger;
-
 use clap::{Parser, Subcommand};
-use log::debug;
 use std::fs;
 use std::io;
 use vkmsctl::VkmsDeviceBuilder;
@@ -9,10 +6,6 @@ use vkmsctl::VkmsDeviceBuilder;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// If set, more verbose logging will be used.
-    #[arg(short, long)]
-    pub verbose: bool,
-
     /// Directory were configfs is mounted.
     #[arg(long, default_value = "/sys/kernel/config")]
     pub configfs_path: String,
@@ -87,10 +80,6 @@ fn remove_vkms_device(configfs_path: &str, name: &str) -> Result<(), io::Error> 
 
 fn main() -> Result<(), io::Error> {
     let args = Args::parse();
-    logger::init(args.verbose).expect("Error initializing logger, was logger::init called twice?");
-
-    debug!("Command line args: {args:?}");
-
     let configfs_path = args.configfs_path;
 
     match args.command {

@@ -12,13 +12,12 @@ default-run = "vkmsctl"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"], optional = true }
-log = { version = "0.4.27", optional = true }
 serde = "1.0.219"
 serde_json = "1.0.142"
 serde_valid = "1.0.5"
 
 [features]
-vkmsctl-cli = ["clap", "log"]
+vkmsctl-cli = ["clap"]
 
 [lib]
 name = "vkmsctl"
