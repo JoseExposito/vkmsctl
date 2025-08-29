@@ -34,7 +34,7 @@ $ sudo vkmsctl create tests/dev1.json
 
 The structure of the JSON file is the following:
 
-```json
+```javascript
 {
   "name": "<Unique name for the device>",
   "enabled": true, // Whether the device is enabled or not
