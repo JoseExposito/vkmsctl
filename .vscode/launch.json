@@ -5,11 +5,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug valid-config.json",
+      "name": "Debug create dev1.json",
       "type": "lldb",
       "request": "launch",
       "program": "${workspaceFolder}/target/debug/vkmsctl",
-      "args": ["create", "${workspaceFolder}/tests/valid-config.json"],
+      "args": ["create", "${workspaceFolder}/tests/dev1.json"],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "build"
     },
